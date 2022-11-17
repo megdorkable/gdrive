@@ -1,0 +1,11 @@
+# Python
+__pycache__
+.cache
+venv
+build
+*.egg*
+.idea/*
+
+# Credentials and Users
+credentials.json
+users.txt
