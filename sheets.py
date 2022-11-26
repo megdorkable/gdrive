@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # sheets.py
 # from __future__ import print_function
+import os
 import pandas as pd
 from googleapiclient.errors import HttpError
 from googleapiclient.discovery import build
@@ -14,7 +15,8 @@ SCOPES = [
     'https://www.googleapis.com/auth/drive'
 ]
 
-credentials = service_account.Credentials.from_service_account_file('credentials.json', scopes=SCOPES)
+cred_path = f'{os.path.dirname(os.path.abspath(__file__))}/credentials.json'
+credentials = service_account.Credentials.from_service_account_file(cred_path, scopes=SCOPES)
 
 spreadsheet_service = build('sheets', 'v4', credentials=credentials)
 drive_service = build('drive', 'v3', credentials=credentials)
@@ -118,6 +120,17 @@ def read_range(spreadsheet_id: str, range_name: str):
     print('{0} rows retrieved.'.format(len(rows)))
     # print('{0} rows retrieved.'.format(rows))
     return rows
+
+
+def range_to_pandas_df(sheet_range: list, headers: bool = False):
+    if headers:
+        return pd.DataFrame(sheet_range[1:], columns=sheet_range[0])
+    else:
+        return pd.DataFrame(sheet_range)
+
+
+def read_range_to_pandas_df(spreadsheet_id: str, range_name: str, headers: bool = False):
+    return range_to_pandas_df(read_range(spreadsheet_id, range_name), headers)
 
 
 def export_pandas_df_to_sheets(spreadsheet_id: str, range_name: str, df: pd.core.frame.DataFrame):
