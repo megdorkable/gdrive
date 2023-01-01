@@ -35,7 +35,8 @@ def create(spreadsheet_name: str) -> str:
     spreadsheet_id = spreadsheet.get('spreadsheetId')
     print('Creating Spreadsheet ID: {0}'.format(spreadsheet_id))
 
-    user_file = open("users.txt", "r")
+    users_path = f'{os.path.dirname(os.path.abspath(__file__))}/users.txt'
+    user_file = open(users_path, "r")
     user_data = user_file.read()
     user_list = user_data.replace('\n', ',').split(',')
 
