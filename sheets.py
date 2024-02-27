@@ -53,20 +53,35 @@ def create(spreadsheet_name: str) -> str:
     spreadsheet_id = spreadsheet.get('spreadsheetId')
     print('Creating Spreadsheet ID: {0}'.format(spreadsheet_id))
 
-    users_path = f'{os.path.dirname(os.path.abspath(__file__))}/users.txt'
-    user_file = open(users_path, "r")
-    user_data = user_file.read()
-    user_list = user_data.replace('\n', ',').split(',')
+    try:
+        users_path = f'{os.path.dirname(os.path.abspath(__file__))}/users.txt'
+        user_file = open(users_path, "r")
+        user_data = user_file.read()
+        user_list = user_data.replace('\n', ',').split(',')
 
-    for user in user_list:
-        permission1 = {
-            'type': 'user',
-            'role': 'writer',
-            'emailAddress': user
-        }
-        drive_service.permissions().create(fileId=spreadsheet_id, body=permission1).execute()
+        for user in user_list:
+            permission1 = {
+                'type': 'user',
+                'role': 'writer',
+                'emailAddress': user
+            }
+            drive_service.permissions().create(fileId=spreadsheet_id, body=permission1).execute()
+    except FileNotFoundError as error:
+        print(F'Not shared with any additional users: {error}')
 
     return spreadsheet_id
+
+
+def find_sheet(spreadsheet_id: str, sheet_name: str):
+    try:
+        ss = spreadsheet_service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+        sheet_id = None
+        for sheet in ss['sheets']:
+            if sheet['properties']['title'] == sheet_name:
+                sheet_id = sheet['properties']['sheetId']
+        return sheet_id
+    except HttpError as error:
+        print(F'An error occurred: {error}')
 
 
 def add_sheet(spreadsheet_id: str, sheet_name: str):
@@ -83,6 +98,22 @@ def add_sheet(spreadsheet_id: str, sheet_name: str):
         spreadsheet_service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=body).execute()
     except HttpError as error:
         print(F'An error occurred: {error}')
+
+
+def delete_sheet(spreadsheet_id: str, sheet_name: str):
+    sheet_id = find_sheet(spreadsheet_id, sheet_name)
+    if sheet_id is not None:
+        body = {
+            "requests": {
+                "deleteSheet": {
+                    "sheetId": sheet_id
+                }
+            }
+        }
+        try:
+            spreadsheet_service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=body).execute()
+        except HttpError as error:
+            print(F'An error occurred: {error}')
 
 
 def rename_sheet(spreadsheet_id: str, sheet_id: str, new_name: str):
@@ -134,11 +165,16 @@ def find_spreadsheet_by_name(spreadsheet_name: str):
 
 
 def read_range(spreadsheet_id: str, range_name: str):
-    result = spreadsheet_service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
-    rows = result.get('values', [])
-    print('{0} rows retrieved.'.format(len(rows)))
-    # print('{0} rows retrieved.'.format(rows))
-    return rows
+    try:
+        result = spreadsheet_service.spreadsheets().values().get(spreadsheetId=spreadsheet_id,
+                                                                 range=range_name).execute()
+        rows = result.get('values', [])
+        print('{0} rows retrieved.'.format(len(rows)))
+        # print('{0} rows retrieved.'.format(rows))
+        return rows
+    except HttpError as error:
+        print(f"An error occurred: {error}")
+        return []
 
 
 def range_to_pandas_df(sheet_range: list, headers: bool = False):
