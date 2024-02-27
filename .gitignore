@@ -8,4 +8,5 @@ build
 
 # Credentials and Users
 credentials.json
+token.json
 users.txt

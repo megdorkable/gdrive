@@ -6,6 +6,10 @@ import pandas as pd
 from googleapiclient.errors import HttpError
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
+from google.auth.exceptions import MalformedError
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
 
 
 # -- CREDENTIALS SETUP -- #
@@ -16,7 +20,21 @@ SCOPES = [
 ]
 
 cred_path = f'{os.path.dirname(os.path.abspath(__file__))}/credentials.json'
-credentials = service_account.Credentials.from_service_account_file(cred_path, scopes=SCOPES)
+token_path = f'{os.path.dirname(os.path.abspath(__file__))}/token.json'
+try:
+    credentials = service_account.Credentials.from_service_account_file(cred_path, scopes=SCOPES)
+except MalformedError:
+    credentials = None
+    if os.path.exists(token_path):
+        credentials = Credentials.from_authorized_user_file(token_path, SCOPES)
+    if not credentials or not credentials.valid:
+        if credentials and credentials.expired and credentials.refresh_token:
+            credentials.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(cred_path, SCOPES)
+            credentials = flow.run_local_server(port=0)
+        with open(token_path, 'w') as token:
+            token.write(credentials.to_json())
 
 spreadsheet_service = build('sheets', 'v4', credentials=credentials)
 drive_service = build('drive', 'v3', credentials=credentials)
