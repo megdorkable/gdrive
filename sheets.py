@@ -3,6 +3,7 @@
 # from __future__ import print_function
 import os
 import pandas as pd
+from typing import List
 from googleapiclient.errors import HttpError
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
@@ -177,6 +178,17 @@ def read_range(spreadsheet_id: str, range_name: str):
         return []
 
 
+def write_range(spreadsheet_id: str, range_name: str, values: List[List]):
+    value_input_option = 'USER_ENTERED'
+    body = {
+        'values': values
+    }
+    result = spreadsheet_service.spreadsheets().values().update(
+        spreadsheetId=spreadsheet_id, range=range_name,
+        valueInputOption=value_input_option, body=body).execute()
+    print('{0} cells updated.'.format(result.get('updatedCells')))
+
+
 def range_to_pandas_df(sheet_range: list, headers: bool = False):
     if headers:
         return pd.DataFrame(sheet_range[1:], columns=sheet_range[0])
@@ -189,11 +201,4 @@ def read_range_to_pandas_df(spreadsheet_id: str, range_name: str, headers: bool 
 
 
 def export_pandas_df_to_sheets(spreadsheet_id: str, range_name: str, df: pd.core.frame.DataFrame):
-    value_input_option = 'USER_ENTERED'
-    body = {
-        'values': [df.columns.values.tolist()] + df.values.tolist()
-    }
-    result = spreadsheet_service.spreadsheets().values().update(
-        spreadsheetId=spreadsheet_id, range=range_name,
-        valueInputOption=value_input_option, body=body).execute()
-    print('{0} cells updated.'.format(result.get('updatedCells')))
+    write_range(spreadsheet_id, range_name, [df.columns.values.tolist()] + df.values.tolist())
