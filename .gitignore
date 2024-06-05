@@ -2,11 +2,7 @@
 __pycache__
 .cache
 venv
+env
 build
 *.egg*
 .idea/*
-
-# Credentials and Users
-credentials.json
-token.json
-users.txt

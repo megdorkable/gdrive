@@ -1,1 +1,0 @@
-List of emails to share the Google Sheet with, separated by new lines
